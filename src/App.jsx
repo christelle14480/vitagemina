@@ -1015,10 +1015,10 @@ export default function App() {
                 <div style={{ fontSize: 11, color: theme.muted, marginBottom: 8 }}>
                   Plasma concentration · {result.yLabel} · 0–{result.timeMax}h
                 </div>
-                <div style={{ background: theme.chartBg, border: `1px solid ${theme.borderSoft}`, borderRadius: 8, padding: "8px 2px 4px", marginBottom: 12 }}>
+                <div style={{ background: theme.chartBg, border: `1px solid ${theme.borderSoft}`, borderRadius: 8, padding: "8px 2px 4px", marginBottom: 12, overflow: "hidden" }}>
                   <ResponsiveContainer width="100%" height={150}>
                     <ComposedChart data={pkData} margin={{ top: 8, right: 44, left: 4, bottom: 0 }}>
-                      <XAxis dataKey="t" tick={{ fontSize: 11, fill: theme.axis }} tickFormatter={(v) => `${v}h`} tickLine={false} axisLine={false} ticks={Array.from({length: 5}, (_, i) => +((i / 4) * result.timeMax).toFixed(2))} />
+                      <XAxis dataKey="t" tick={{ fontSize: 11, fill: theme.axis }} tickFormatter={(v) => `${v}h`} tickLine={false} axisLine={false} ticks={Array.from({length: 4}, (_, i) => +((i / 3) * result.timeMax * 0.75).toFixed(2))} />
                       <YAxis tick={{ fontSize: 11, fill: theme.axis }} tickLine={false} axisLine={false} width={38} />
                       <Tooltip content={<PKTooltip profile={result} theme={theme} />} />
                       <ReferenceLine y={result.toxLine}  stroke="#f87171" strokeDasharray="5 5" />
