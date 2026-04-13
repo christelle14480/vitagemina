@@ -271,7 +271,7 @@ function useHeartRate() {
         const spike = Math.random() < 0.03;
         return spike ? Math.round(rand(108, 130)) : Math.round(rand(68, 86));
       });
-    }, 700);
+    }, 350);
     return () => clearInterval(id);
   }, []);
   return bpm;
@@ -311,7 +311,7 @@ function useGlucose() {
         setWarn(next < 70 ? "Hypoglycaemia" : next > 180 ? "Hyperglycaemia" : null);
         return [...prev.slice(-39), { t: last.t + 1, mg: +next.toFixed(1) }];
       });
-    }, 1000);
+    }, 350);
     return () => clearInterval(id);
   }, []);
   return { data, warn };
@@ -326,7 +326,7 @@ function useOrgans() {
         ...o,
         value: +clamp(o.value + (Math.random() - 0.5) * 0.8, 30, 99).toFixed(1),
       })));
-    }, 2800);
+    }, 800);
     return () => clearInterval(id);
   }, []);
   return organs;
@@ -346,7 +346,7 @@ function usePredictions() {
         prob: +clamp(ev.prob + (Math.random() - 0.48) * 1.1, 2, 97).toFixed(1),
         hrs: +Math.max(0.05, ev.hrs - 0.002).toFixed(2),
       })));
-    }, 3000);
+    }, 1000);
     return () => clearInterval(id);
   }, []);
   return events;
@@ -396,7 +396,7 @@ function useDrugSim(selectedDrug) {
     setPhase("simulating"); setProgress(0); setResult(null); setPkData(null);
     let p = 0;
     const id = setInterval(() => {
-      p += rand(12, 22);
+      p += rand(35, 55);
       setProgress(Math.min(p, 100));
       if (p >= 100) {
         clearInterval(id);
@@ -405,7 +405,7 @@ function useDrugSim(selectedDrug) {
         setResult({ ...profile, patientPeak: Math.max(...curve.map((c) => c.patient)) });
         setPhase("done");
       }
-    }, 20);
+    }, 8);
   };
 
   const reset = () => {
@@ -666,6 +666,11 @@ export default function App() {
           .vg-col2-wide { grid-template-columns: 1.45fr 0.85fr !important; }
           .vg-metric-grid { grid-template-columns: repeat(4, 1fr) !important; }
           .vg-blood-grid  { grid-template-columns: repeat(3, 1fr) !important; }
+          /* Tighten prediction cards so the row is shorter in print */
+          .vg-pred-card { padding: 8px 10px !important; }
+          .vg-pred-prob { font-size: 22px !important; }
+          /* Verdict + footer: never break apart, and avoid orphaning */
+          .vg-verdict-footer { page-break-inside: avoid; page-break-before: avoid; }
         }
       `}</style>
 
@@ -868,7 +873,7 @@ export default function App() {
         </div>
 
         {/* Row 2: Blood panel · Genomics */}
-        <div className="vg-col2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <div className="vg-col2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, pageBreakInside: "avoid" }}>
 
           {/* Blood panel */}
           <div style={card} className="vg-card">
@@ -915,7 +920,7 @@ export default function App() {
         </div>
 
         {/* Row 3: Drug sim · Predictions */}
-        <div className="vg-col2-wide" style={{ display: "grid", gridTemplateColumns: "1.45fr 0.85fr", gap: 14 }}>
+        <div className="vg-col2-wide" style={{ display: "grid", gridTemplateColumns: "1.45fr 0.85fr", gap: 14, pageBreakInside: "avoid" }}>
 
           {/* Drug simulation */}
           <div style={card} className="vg-card">
@@ -992,7 +997,7 @@ export default function App() {
             {phase === "done" && result && pkData && (
               <div className="vg-sim-result">
                 {/* Metric tiles */}
-                <div className="vg-metric-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8, marginBottom: 16 }}>
+                <div className="vg-metric-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8, marginBottom: 10 }}>
                   {[
                     { label: "Efficacy",      val: `${result.efficacy}%`,  color: "#4ade80" },
                     { label: "Toxicity risk", val: `${result.toxRisk}%`,   color: result.toxRisk > 40 ? "#f87171" : result.toxRisk > 20 ? "#facc15" : "#4ade80" },
@@ -1011,22 +1016,22 @@ export default function App() {
                   Plasma concentration · {result.yLabel} · 0–{result.timeMax}h
                 </div>
                 <div style={{ background: theme.chartBg, border: `1px solid ${theme.borderSoft}`, borderRadius: 8, padding: "8px 2px 4px", marginBottom: 12 }}>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <ComposedChart data={pkData} margin={{ top: 8, right: 24, left: 4, bottom: 0 }}>
-                      <XAxis dataKey="t" tick={{ fontSize: 11, fill: theme.axis }} tickFormatter={(v) => `${v}h`} tickLine={false} axisLine={false} />
+                  <ResponsiveContainer width="100%" height={150}>
+                    <ComposedChart data={pkData} margin={{ top: 8, right: 44, left: 4, bottom: 0 }}>
+                      <XAxis dataKey="t" tick={{ fontSize: 11, fill: theme.axis }} tickFormatter={(v) => `${v}h`} tickLine={false} axisLine={false} ticks={Array.from({length: 5}, (_, i) => +((i / 4) * result.timeMax).toFixed(2))} />
                       <YAxis tick={{ fontSize: 11, fill: theme.axis }} tickLine={false} axisLine={false} width={38} />
                       <Tooltip content={<PKTooltip profile={result} theme={theme} />} />
                       <ReferenceLine y={result.toxLine}  stroke="#f87171" strokeDasharray="5 5" />
                       <ReferenceLine y={result.therMax}  stroke="#facc15" strokeDasharray="4 4" />
                       <ReferenceLine y={result.therMin}  stroke="#4ade80" strokeDasharray="4 4" />
-                      <Line type="monotone" dataKey="population" stroke={theme.faint} strokeDasharray="6 4" strokeWidth={2} dot={false} />
-                      <Line type="monotone" dataKey="patient"    stroke={VERDICT_COLOR[result.verdictType]} strokeWidth={3} dot={false} />
+                      <Line type="monotone" dataKey="population" stroke={theme.faint} strokeDasharray="6 4" strokeWidth={2} dot={false} isAnimationActive={false} />
+                      <Line type="monotone" dataKey="patient"    stroke={VERDICT_COLOR[result.verdictType]} strokeWidth={3} dot={false} isAnimationActive={false} />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
 
                 {/* Chart legend */}
-                <div style={{ display: "flex", gap: 18, fontSize: 12, color: theme.subtext, marginBottom: 14 }}>
+                <div style={{ display: "flex", gap: 18, fontSize: 12, color: theme.subtext, marginBottom: 10 }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
                     <span style={{ display: "inline-block", width: 22, height: 2, borderTop: `2px dashed ${theme.faint}` }} />
                     Population average
@@ -1041,20 +1046,9 @@ export default function App() {
                 <div style={{
                   borderLeft: `3px solid ${VERDICT_COLOR[result.verdictType]}`, borderRadius: "0 0 0 0",
                   paddingLeft: 10, fontSize: 13, color: theme.subtext,
-                  lineHeight: 1.6, marginBottom: 12,
+                  lineHeight: 1.6, marginBottom: 8,
                 }}>
                   {result.genomicNote}
-                </div>
-
-                {/* Verdict box */}
-                <div style={{
-                  border: `1px solid ${VERDICT_COLOR[result.verdictType]}55`,
-                  background: isDark ? VERDICT_BG_DARK[result.verdictType] : VERDICT_BG_LIGHT[result.verdictType],
-                  color: VERDICT_TEXT[result.verdictType],
-                  borderRadius: 8, padding: 13,
-                  fontSize: 13, fontWeight: 600, lineHeight: 1.55,
-                }}>
-                  {result.verdictText}
                 </div>
               </div>
             )}
@@ -1074,7 +1068,7 @@ export default function App() {
                   <div key={ev.id} style={{
                     border: `1px solid ${theme.borderSoft}`, background: theme.surfaceAlt,
                     borderRadius: 10, padding: 12,
-                  }}>
+                  }} className="vg-pred-card">
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: theme.title }}>{ev.label}</div>
                       <div style={{
@@ -1089,7 +1083,7 @@ export default function App() {
                       <div style={{ width: `${prob}%`, height: "100%", borderRadius: 999, background: barColor, transition: "width .5s ease" }} />
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <span style={{ fontSize: 28, fontWeight: 800, color: barColor, lineHeight: 1, fontFamily: "'DM Mono', monospace" }}>{prob}%</span>
+                      <span className="vg-pred-prob" style={{ fontSize: 28, fontWeight: 800, color: barColor, lineHeight: 1, fontFamily: "'DM Mono', monospace" }}>{prob}%</span>
                       <span style={{ fontSize: 11, color: theme.muted }}>
                         {prob > 60 ? "High probability" : prob > 35 ? "Moderate risk" : "Low risk"}
                       </span>
@@ -1110,14 +1104,33 @@ export default function App() {
           </div>
         </div>
 
-        {/* Footer */}
-        <div style={{
-          display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10,
-          fontSize: 11, color: theme.muted, borderTop: `1px solid ${theme.border}`, paddingTop: 12,
-        }}>
-          <span>Digital twin integrity: <strong style={{ color: "#22d3ee" }}>Verified demo</strong></span>
-          <span>Expected domains: CGM · ECG · wearables · genomic array · blood panel</span>
-          <span>{SNAPSHOT_MODE ? "Documentation snapshot" : "Client-side simulation"} · Not for clinical use</span>
+        {/* Verdict + footer — grouped to avoid page-break orphaning */}
+        <div className="vg-verdict-footer" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {phase === "done" && result && (
+            <div style={{
+              border: `1px solid ${VERDICT_COLOR[result.verdictType]}55`,
+              background: isDark ? VERDICT_BG_DARK[result.verdictType] : VERDICT_BG_LIGHT[result.verdictType],
+              color: VERDICT_TEXT[result.verdictType],
+              borderRadius: 10, padding: "13px 18px",
+              fontSize: 13, fontWeight: 600, lineHeight: 1.55,
+              display: "flex", alignItems: "center", gap: 12,
+            }}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>
+                {result.verdictType === "critical" ? "⛔" : result.verdictType === "warn" ? "⚠" : "✓"}
+              </span>
+              <span>{result.verdictText}</span>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div style={{
+            display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10,
+            fontSize: 11, color: theme.muted, borderTop: `1px solid ${theme.border}`, paddingTop: 12,
+          }}>
+            <span>Digital twin integrity: <strong style={{ color: "#22d3ee" }}>Verified demo</strong></span>
+            <span>Expected domains: CGM · ECG · wearables · genomic array · blood panel</span>
+            <span>{SNAPSHOT_MODE ? "Documentation snapshot" : "Client-side simulation"} · Not for clinical use</span>
+          </div>
         </div>
       </div>
     </div>
